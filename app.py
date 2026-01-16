@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import json
 from datetime import datetime
-from utils import build_yearly_index, build_name_index, get_block_key, normalize
+from utils import build_yearly_index, build_name_index, get_block_key, normalize, normalize_for_blocking
 from matcher import find_best_match
 from google_sheets import (
     authenticate_google_sheets,
@@ -126,7 +126,7 @@ if st.session_state.get('credentials_ready', False):
                     
                     # If no mobile match, try name blocking if name column selected
                     if len(candidates) == 0 and name_col != 'None':
-                        name_key = normalize(daily_row[name_col])
+                        name_key = normalize_for_blocking(daily_row[name_col])
                         candidates = name_blocks.get(name_key, [])
                     
                     # If still no candidates and no blocking columns selected, use all yearly records

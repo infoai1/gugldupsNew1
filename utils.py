@@ -14,6 +14,18 @@ def normalize(text):
         return ""
     return str(text).lower().strip()
 
+def normalize_for_blocking(text):
+    """Normalize text for blocking - removes special chars for better matching"""
+    if pd.isna(text):
+        return ""
+    # Convert to lowercase, remove periods, dashes, extra spaces
+    text = str(text).lower().strip()
+    # Remove special characters (keep only letters, numbers, spaces)
+    text = re.sub(r'[^\w\s]', ' ', text)
+    # Replace multiple spaces with single space
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
 def get_block_key(mobile):
     """Get blocking key from mobile number (last 4 digits)"""
     if mobile is None:
@@ -35,13 +47,14 @@ def build_yearly_index(df_yearly, mobile_col):
     return yearly_blocks
 
 def build_name_index(df_yearly, name_col):
-    """Build name-based blocking index"""
+    """Build name-based blocking index using relaxed normalization"""
     name_blocks = {}
     if name_col is None or name_col == 'None':
         return name_blocks
-    
+
     for idx, row in df_yearly.iterrows():
-        key = normalize(row[name_col])
+        # Use relaxed normalization for blocking (removes special chars)
+        key = normalize_for_blocking(row[name_col])
         if key and key != "":
             if key not in name_blocks:
                 name_blocks[key] = []

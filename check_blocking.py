@@ -9,6 +9,7 @@ from google_sheets import authenticate_google_sheets, get_sheet_by_url, read_she
 from utils import normalize, get_block_key, build_yearly_index, build_name_index
 
 PROBLEM_PATIENTS = [
+    "Affan Azizur.Rehman Mansoori",
     "Panmati Subhashchandra Gupta",
     "Md.Tahsin Turful Shaikh",
     "SHADABRAZA",

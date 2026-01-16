@@ -45,11 +45,36 @@ def write_df_to_sheet(worksheet, df):
     # Write to sheet
     worksheet.update([df_clean.columns.values.tolist()] + df_clean.values.tolist())
 
-def delete_rows_by_indices(worksheet, row_indices):
-    """Delete specific rows from worksheet"""
+def delete_rows_by_indices(worksheet, row_indices, progress_callback=None):
+    """Delete specific rows from worksheet with error handling"""
+    import time
+
     # Sort in reverse to delete from bottom to top
     sorted_indices = sorted(row_indices, reverse=True)
-    
-    for idx in sorted_indices:
-        # +2 because: +1 for header row, +1 for 1-based indexing
-        worksheet.delete_rows(idx + 2)
+
+    deleted_count = 0
+    failed_indices = []
+
+    for i, idx in enumerate(sorted_indices):
+        try:
+            # +2 because: +1 for header row, +1 for 1-based indexing
+            worksheet.delete_rows(idx + 2)
+            deleted_count += 1
+
+            # Add small delay to avoid rate limiting
+            if (i + 1) % 10 == 0:
+                time.sleep(1)  # Pause every 10 deletions
+
+            if progress_callback:
+                progress_callback(i + 1, len(sorted_indices))
+
+        except Exception as e:
+            failed_indices.append((idx, str(e)))
+            # Continue trying other rows
+            continue
+
+    return {
+        'deleted': deleted_count,
+        'failed': len(failed_indices),
+        'failed_details': failed_indices
+    }

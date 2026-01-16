@@ -253,8 +253,25 @@ if st.session_state.get('credentials_ready', False):
                     st.info("Step 3: Deleting perfect duplicates from Daily sheet...")
                     if perfect_duplicate_ids:
                         daily_worksheet = st.session_state['daily_worksheet']
-                        delete_rows_by_indices(daily_worksheet, list(perfect_duplicate_ids))
-                        st.success(f"✅ Deleted {len(perfect_duplicate_ids)} perfect duplicates from Daily sheet")
+
+                        # Show progress bar for deletion
+                        progress_bar = st.progress(0, text="Deleting rows...")
+
+                        def update_progress(current, total):
+                            progress_bar.progress(current / total, text=f"Deleting row {current}/{total}...")
+
+                        result = delete_rows_by_indices(daily_worksheet, list(perfect_duplicate_ids), update_progress)
+
+                        progress_bar.empty()
+
+                        if result['deleted'] > 0:
+                            st.success(f"✅ Deleted {result['deleted']} perfect duplicates from Daily sheet")
+
+                        if result['failed'] > 0:
+                            st.warning(f"⚠️ Failed to delete {result['failed']} rows")
+                            with st.expander("View failed deletions"):
+                                for idx, error in result['failed_details']:
+                                    st.write(f"Row {idx + 2}: {error}")
                     
                     st.success("🎉 All updates completed successfully!")
                 except Exception as e:

@@ -225,8 +225,10 @@ if st.session_state.get('credentials_ready', False):
                                 'Yearly_Date Of Onset': clean_value(best_match['yearly_row'].get('Date Of Onset', ''))
                             })
                         
-                        all_match_results.append(result)
-                        if best_match['match_type'] == '🟢 PERFECT':
+                        # Only add to possible duplicates if NOT perfect
+                        if best_match['match_type'] != '🟢 PERFECT':
+                            all_match_results.append(result)
+                        else:
                             perfect_match_results.append(result)
                 
                 df_all_duplicates = pd.DataFrame(all_match_results) if all_match_results else pd.DataFrame()

@@ -56,8 +56,8 @@ def create_or_clear_sheet(spreadsheet, sheet_name):
             return worksheet
         except Exception as e:
             if '429' in str(e) or 'quota' in str(e).lower():
-                wait_time = 30 * (attempt + 1)
-                print(f"Rate limited on create/clear. Waiting {wait_time}s...")
+                wait_time = 60  # Wait full minute for quota reset
+                print(f"Rate limited on create/clear. Waiting {wait_time}s for quota reset...")
                 time.sleep(wait_time)
             else:
                 raise
@@ -80,12 +80,12 @@ def write_df_to_sheet(worksheet, df):
     for attempt in range(3):
         try:
             worksheet.update(data)
-            time.sleep(3)  # Delay after write to avoid rate limit
+            time.sleep(5)  # Delay after write to avoid rate limit
             return
         except Exception as e:
             if '429' in str(e) or 'quota' in str(e).lower():
-                wait_time = 30 * (attempt + 1)
-                print(f"Rate limited on write. Waiting {wait_time}s...")
+                wait_time = 60  # Wait full minute for quota reset
+                print(f"Rate limited on write. Waiting {wait_time}s for quota reset...")
                 time.sleep(wait_time)
             else:
                 raise
@@ -108,8 +108,8 @@ def delete_rows_by_indices(worksheet, row_indices, progress_callback=None):
                 worksheet.delete_rows(idx + 2)
                 deleted_count += 1
 
-                # Delay after each deletion to stay under rate limit
-                time.sleep(1)
+                # Delay 2 seconds after each deletion to stay under rate limit (30 deletes/min)
+                time.sleep(2)
 
                 if progress_callback:
                     progress_callback(i + 1, len(sorted_indices))
@@ -120,7 +120,8 @@ def delete_rows_by_indices(worksheet, row_indices, progress_callback=None):
                 error_str = str(e)
                 if '429' in error_str or 'quota' in error_str.lower():
                     if attempt < max_retries - 1:
-                        wait_time = 30 * (attempt + 1)
+                        # Wait 60 seconds for quota to fully reset
+                        wait_time = 60
                         if progress_callback:
                             progress_callback(i + 1, len(sorted_indices), f"Rate limited, waiting {wait_time}s...")
                         time.sleep(wait_time)

@@ -234,20 +234,32 @@ if st.session_state.get('credentials_ready', False):
                 df_perfect_only = pd.DataFrame(perfect_match_results) if perfect_match_results else pd.DataFrame()
                 
                 st.success(f"✅ Found {len(perfect_duplicate_ids)} PERFECT duplicates | {len(all_match_results)} total matches")
-                
+
                 # Update Google Sheets
                 try:
                     daily_spreadsheet = st.session_state['daily_spreadsheet']
-                    
+
+                    # Initial cooldown - quota resets every 60 seconds
+                    st.warning("⏳ Waiting 60 seconds for API quota to reset...")
+                    cooldown_bar = st.progress(0)
+                    for i in range(60):
+                        time.sleep(1)
+                        cooldown_bar.progress((i + 1) / 60, text=f"Cooldown: {60 - i - 1}s remaining...")
+                    cooldown_bar.empty()
+
                     st.info("Step 1: Creating 'Possible Duplicates' tab...")
                     if not df_all_duplicates.empty:
                         possible_dup_sheet = create_or_clear_sheet(daily_spreadsheet, "Possible Duplicates")
                         write_df_to_sheet(possible_dup_sheet, df_all_duplicates)
                         st.success(f"✅ Created 'Possible Duplicates' with {len(df_all_duplicates)} rows")
 
-                    # Wait before next step to avoid rate limit
-                    st.info("⏳ Waiting 10 seconds to avoid API rate limit...")
-                    time.sleep(10)
+                    # Wait 60 seconds for quota reset
+                    st.warning("⏳ Waiting 60 seconds for API quota to reset...")
+                    cooldown_bar = st.progress(0)
+                    for i in range(60):
+                        time.sleep(1)
+                        cooldown_bar.progress((i + 1) / 60, text=f"Cooldown: {60 - i - 1}s remaining...")
+                    cooldown_bar.empty()
 
                     st.info("Step 2: Creating 'Perfect Duplicates' tab...")
                     if not df_perfect_only.empty:
@@ -255,9 +267,13 @@ if st.session_state.get('credentials_ready', False):
                         write_df_to_sheet(perfect_dup_sheet, df_perfect_only)
                         st.success(f"✅ Created 'Perfect Duplicates' with {len(df_perfect_only)} rows")
 
-                    # Wait before deletion step
-                    st.info("⏳ Waiting 10 seconds to avoid API rate limit...")
-                    time.sleep(10)
+                    # Wait 60 seconds for quota reset before deletion
+                    st.warning("⏳ Waiting 60 seconds for API quota to reset...")
+                    cooldown_bar = st.progress(0)
+                    for i in range(60):
+                        time.sleep(1)
+                        cooldown_bar.progress((i + 1) / 60, text=f"Cooldown: {60 - i - 1}s remaining...")
+                    cooldown_bar.empty()
 
                     st.info("Step 3: Deleting perfect duplicates from Daily sheet...")
                     if perfect_duplicate_ids:

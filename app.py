@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import json
-import time
 from datetime import datetime
 from utils import build_yearly_index, build_name_index, get_block_key, normalize
 from matcher import find_best_match
@@ -234,69 +233,31 @@ if st.session_state.get('credentials_ready', False):
                 df_perfect_only = pd.DataFrame(perfect_match_results) if perfect_match_results else pd.DataFrame()
                 
                 st.success(f"✅ Found {len(perfect_duplicate_ids)} PERFECT duplicates | {len(all_match_results)} total matches")
-
+                
                 # Update Google Sheets
                 try:
                     daily_spreadsheet = st.session_state['daily_spreadsheet']
-
-                    # Initial cooldown - quota resets every 60 seconds
-                    st.warning("⏳ Waiting 60 seconds for API quota to reset...")
-                    cooldown_bar = st.progress(0)
-                    for i in range(60):
-                        time.sleep(1)
-                        cooldown_bar.progress((i + 1) / 60, text=f"Cooldown: {60 - i - 1}s remaining...")
-                    cooldown_bar.empty()
-
+                    
                     st.info("Step 1: Creating 'Possible Duplicates' tab...")
                     if not df_all_duplicates.empty:
                         possible_dup_sheet = create_or_clear_sheet(daily_spreadsheet, "Possible Duplicates")
                         write_df_to_sheet(possible_dup_sheet, df_all_duplicates)
                         st.success(f"✅ Created 'Possible Duplicates' with {len(df_all_duplicates)} rows")
-
-                    # Wait 60 seconds for quota reset
-                    st.warning("⏳ Waiting 60 seconds for API quota to reset...")
-                    cooldown_bar = st.progress(0)
-                    for i in range(60):
-                        time.sleep(1)
-                        cooldown_bar.progress((i + 1) / 60, text=f"Cooldown: {60 - i - 1}s remaining...")
-                    cooldown_bar.empty()
-
+                    
                     st.info("Step 2: Creating 'Perfect Duplicates' tab...")
                     if not df_perfect_only.empty:
                         perfect_dup_sheet = create_or_clear_sheet(daily_spreadsheet, "Perfect Duplicates")
                         write_df_to_sheet(perfect_dup_sheet, df_perfect_only)
                         st.success(f"✅ Created 'Perfect Duplicates' with {len(df_perfect_only)} rows")
-
-                    # Wait 60 seconds for quota reset before deletion
-                    st.warning("⏳ Waiting 60 seconds for API quota to reset...")
-                    cooldown_bar = st.progress(0)
-                    for i in range(60):
-                        time.sleep(1)
-                        cooldown_bar.progress((i + 1) / 60, text=f"Cooldown: {60 - i - 1}s remaining...")
-                    cooldown_bar.empty()
-
-                    st.info("Step 3: Deleting perfect duplicates from Daily sheet...")
+                    
+                    st.info("Step 3: Deleting perfect duplicates from Daily sheet (batch mode)...")
                     if perfect_duplicate_ids:
                         daily_worksheet = st.session_state['daily_worksheet']
-
-                        # Show progress bar for deletion
-                        progress_bar = st.progress(0, text="Deleting rows...")
-
-                        def update_progress(current, total):
-                            progress_bar.progress(current / total, text=f"Deleting row {current}/{total}...")
-
-                        result = delete_rows_by_indices(daily_worksheet, list(perfect_duplicate_ids), update_progress)
-
-                        progress_bar.empty()
-
+                        result = delete_rows_by_indices(daily_worksheet, list(perfect_duplicate_ids))
                         if result['deleted'] > 0:
                             st.success(f"✅ Deleted {result['deleted']} perfect duplicates from Daily sheet")
-
                         if result['failed'] > 0:
-                            st.warning(f"⚠️ Failed to delete {result['failed']} rows")
-                            with st.expander("View failed deletions"):
-                                for idx, error in result['failed_details']:
-                                    st.write(f"Row {idx + 2}: {error}")
+                            st.error(f"❌ Failed to delete: {result['failed_details']}")
                     
                     st.success("🎉 All updates completed successfully!")
                 except Exception as e:

@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import json
+import time
 from datetime import datetime
 from utils import build_yearly_index, build_name_index, get_block_key, normalize
 from matcher import find_best_match
@@ -243,13 +244,21 @@ if st.session_state.get('credentials_ready', False):
                         possible_dup_sheet = create_or_clear_sheet(daily_spreadsheet, "Possible Duplicates")
                         write_df_to_sheet(possible_dup_sheet, df_all_duplicates)
                         st.success(f"✅ Created 'Possible Duplicates' with {len(df_all_duplicates)} rows")
-                    
+
+                    # Wait before next step to avoid rate limit
+                    st.info("⏳ Waiting 10 seconds to avoid API rate limit...")
+                    time.sleep(10)
+
                     st.info("Step 2: Creating 'Perfect Duplicates' tab...")
                     if not df_perfect_only.empty:
                         perfect_dup_sheet = create_or_clear_sheet(daily_spreadsheet, "Perfect Duplicates")
                         write_df_to_sheet(perfect_dup_sheet, df_perfect_only)
                         st.success(f"✅ Created 'Perfect Duplicates' with {len(df_perfect_only)} rows")
-                    
+
+                    # Wait before deletion step
+                    st.info("⏳ Waiting 10 seconds to avoid API rate limit...")
+                    time.sleep(10)
+
                     st.info("Step 3: Deleting perfect duplicates from Daily sheet...")
                     if perfect_duplicate_ids:
                         daily_worksheet = st.session_state['daily_worksheet']
